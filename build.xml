@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="excelPOI-noproguard" name="Create Runnable Jar for Project excelPOIPlugin">
+	
+	<taskdef resource="proguard/ant/task.properties" classpath="../library/lib/proguard4_9.jar" />
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+		<target name="propconfig">
+			<echo>Java home is ${java.home}</echo>
+			<!-- this seems cumbersome but ant does not allow to alter properties! -->
+			<condition property="pglibs" value="-libraryjars ${java.home}/lib/rt.jar">
+				<os family="mac" />
+			</condition>
+			<condition property="pglibs" value='-libraryjars "${java.home}\\lib\\rt.jar"'>
+				<os family="windows" />
+			</condition>
+			<condition property="pglibs" value="-libraryjars ${java.home}/lib/rt.jar">
+				<os family="unix" />
+			</condition>
+			<condition property="rhino_call" value="extract_rhino" else="dummy">
+				<istrue value="${use_rhino}" />
+			</condition>
+			<tstamp>
+				<format property="build_time" pattern="yyyy-MM-dd-HH" timezone="Europe/Zurich" />
+			</tstamp>
+			<echo>Current build time ${build_time}</echo>
+			<echo>Creating build properties file</echo>
+			<propertyfile file="./bin/build.info">
+				<entry key="build_time" value="${build_time}" />
+			</propertyfile>
+	</target>
+	<!--
+	Clean the dependency directory
+	-->
+	<target name="clean">
+		<delete dir="dependencies" />
+	</target>
+	
+	<target name="prepare" depends="propconfig">
+		<antcall target="clean">
+		</antcall>
+		<mkdir dir="dependencies" />
+		<unjar  src="./lib/dom4j-1.6.1.jar" dest="dependencies" />
+		<unjar  src="./lib/xmlbeans-2.3.0.jar" dest="dependencies" />
+		<unjar  src="./lib/poi-3.10.1-20140818.jar" dest="dependencies" />
+		<unjar  src="./lib/poi-ooxml-3.10.1-20140818.jar" dest="dependencies" />
+		<unjar  src="./lib/poi-excelant-3.10.1-20140818.jar" dest="dependencies" />
+		<unjar  src="./lib/poi-ooxml-schemas-3.10.1-20140818.jar" dest="dependencies" />
+		<unjar  src="./lib/poi-scratchpad-3.10.1-20140818.jar" dest="dependencies" />                 
+	</target>
+	
+    <target name="excelPOI-full" depends="prepare">
+        <jar destfile="./jars/excelPOI-full.jar" filesetmanifest="mergewithoutmain">
+            <fileset dir="bin">
+            	<exclude name="**/test/**" />
+            	<exclude name="**/tests/**" />
+            	<exclude name="*/test/*.class" />
+            	<exclude name="**/*.jpg" />
+            	<exclude name="**/*.xlsx" />
+            	<exclude name="**/*.jpg" />
+            	<include name="**/*.class" />
+            	<include name="**/*.js" />
+            	<include name="**/*.txt" />
+            	<include name="plugin.properties" />
+            </fileset>
+        	<fileset dir="dependencies">
+        		<exclude name="META-INF/**" />
+        		<exclude name="**/*.jpg" />
+        		<exclude name="**/*.png" />
+        		<exclude name="**/*.gif" />
+        		<exclude name="ij.text.*" />
+        	</fileset>
+        </jar>
+    </target>
+	
+	<target name="excelPOI-noproguard" depends="excelPOI-full">
+		<copy file="./jars/excelPOI-full.jar" tofile="/usr/local/script/plugins/excelPOIPlugin.jar">
+		</copy>
+	</target>
+	
+	<target name="excelPOI" depends="excelPOI-full">
+		<proguard>
+			-ignorewarnings -verbose
+			${pglibs}
+										
+			-injars      jars/excelPOI-full.jar
+			-outjars     jars/excelPOIPlugin.jar
+			-keep public class org.cheminfo.scripting.excel.* { *; } 
+			-keep public class org.apache.poi.ss.usermodel.* {public *;}
+			-keep public class org.apache.poi.xssf.usermodel.* {*;}
+			-keep public class org.apache.poi.xssf.*.* {*;}
+			-keep public class org.apache.poi.xssf.* {*;}
+			-keep public class org.apache.poi.*.*.* {*;}
+			-keep public class org.apache.poi.*.* {*;}
+			-keep public class org.apache.poi.* {*;}
+			-keep public class org.openxmlformats.schemas.officeDocument.x2006.* {*;}
+			-keep public class org.openxmlformats.schemas.officeDocument.x2006.*.* {*;}
+			-keep public class org.openxmlformats.schemas.spreadsheetml.x2006.main.* {*;}
+			-keep public class org.openxmlformats.schemas.spreadsheetml.x2006.main.*.* {*;}
+		</proguard>
+		<copy todir="/usr/local/script/plugins">
+		  <fileset dir="./jars/"
+		           includes="excelPOIPlugin.jar"
+		  />
+		</copy>
+	</target>
+</project>
